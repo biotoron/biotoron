@@ -33,6 +33,15 @@
     if (r.error) throw new Error(r.error.message || "حصل خطأ");
     return r.data;
   }
+  async function callFn(body) {
+    var r = await sb.functions.invoke("admin-users", { body: body });
+    if (r.error) {
+      var msg = r.error.message || "حصل خطأ";
+      try { var j = await r.error.context.json(); if (j && j.error) msg = j.error; } catch (e) {}
+      throw new Error(msg);
+    }
+    return r.data;
+  }
   var flashMsg = null;
   function flash(msg, kind) { flashMsg = { msg: msg, kind: kind || "ok" }; }
   function flashHtml() { if (!flashMsg) return ""; var f = flashMsg; flashMsg = null; return '<div class="flash ' + f.kind + '">' + esc(f.msg) + "</div>"; }
@@ -306,12 +315,18 @@
     if (me.role !== "admin") return setMain(h`<div class="card"><div class="flash err">مش مسموح لحسابك بالصفحة دي.</div></div>`);
     var rows = await rpc("list_users");
     setMain(h`${raw(flashHtml())}<h1>الحسابات</h1>
-      <div class="card"><h2>إزاي تضيف موظف جديد؟</h2><ol class="small"><li>من لوحة Supabase: <b>Authentication ← Users ← Add user</b>، اكتب إيميله وباسورد مؤقت، وعلّم على <b>Auto Confirm User</b>.</li><li>ارجع هنا وحدّث الصفحة، هيظهر في الجدول بدور "بدون دور" — اضغط "تعديل" وحدد دوره.</li><li>اديله الإيميل والباسورد، وهو يغيّر الباسورد من "الباسورد" فوق.</li></ol></div>
+      <form class="card" data-act="create_user"><h2>➕ إنشاء حساب جديد</h2>
+        <div class="row"><div><label>اسم الموظف</label><input name="name" required></div><div><label>الإيميل</label><input type="email" name="email" required dir="ltr" autocomplete="off"></div></div>
+        <div class="row"><div><label>الباسورد (8 على الأقل)</label><input type="text" name="password" required minlength="8" dir="ltr" autocomplete="off"></div>
+        <div><label>الدور</label><select name="role">${Object.keys(ROLES).filter(function (r) { return r !== "none"; }).map(function (r) { return h`<option value="${r}" ${r === "sales" ? "selected" : ""}>${ROLES[r]}</option>`; })}</select></div></div>
+        <p class="small muted">الموظف يقدر يدخل بالإيميل والباسورد ده فوراً. الدور هو اللي بيحدد هيشوف إيه وهيعمل إيه (الصلاحيات تحت).</p>
+        <p><button class="btn">اعمل الحساب</button></p></form>
       <div class="tw"><table><tr><th>الاسم</th><th>الإيميل</th><th>الدور</th><th>الحالة</th><th></th></tr>
       ${rows.map(function (u) { return h`<tr ${u.active ? "" : raw('style="opacity:.55"')}><td><b>${u.name}</b></td><td dir="ltr" style="text-align:${BT_I18N.lang === 'ar' ? 'right' : 'left'}">${u.email}</td><td><span class="pill ${u.role === "none" ? "s-preparing" : "s-new"}">${ROLES[u.role]}</span></td><td>${u.active ? "شغال" : h`<span class="pill s-cancelled">موقوف</span>`}</td>
         <td><details><summary style="cursor:pointer;color:var(--brand)">تعديل</summary><form data-act="set_user" data-uid="${u.id}" style="min-width:260px"><label>الاسم</label><input name="name" value="${u.name}" required>
         <label>الدور</label><select name="role">${Object.keys(ROLES).map(function (r) { return h`<option value="${r}" ${u.role === r ? "selected" : ""}>${ROLES[r]}</option>`; })}</select>
-        <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="active" style="width:auto" ${u.active ? "checked" : ""}> الحساب شغال</label><p><button class="btn sm">حفظ</button></p></form></details></td></tr>`; })}</table></div>
+        <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="active" style="width:auto" ${u.active ? "checked" : ""}> الحساب شغال</label><p><button class="btn sm">حفظ</button></p></form>
+        <form data-act="reset_pw" data-uid="${u.id}" style="min-width:260px;margin-top:.6rem"><label>تغيير باسورد الموظف</label><input type="text" name="password" required minlength="8" dir="ltr" placeholder="باسورد جديد (8 على الأقل)" autocomplete="off"><p><button class="btn sm sec">تغيير الباسورد</button></p></form></details></td></tr>`; })}</table></div>
       <div class="card" style="margin-top:1rem"><h2>الصلاحيات</h2><ul class="small"><li><b>الأدمن:</b> كل حاجة — الوحيد اللي بيضيف/يعدّل المخزن والأصناف والحسابات.</li><li><b>السيلز:</b> يعمل أوردرات ويتابع أوردراته هو بس، ويشوف المتاح بالمخزن (قراءة فقط).</li><li><b>العمليات:</b> يتابع كل الأوردرات، يأكد العربون/الدفع، يعدّل بيانات العميل، يلغي أوردر.</li><li><b>المخزن:</b> بيتبلّغ فوراً بأي أوردر جديد، يحضّره ويجهّزه (من غير أسعار)، ويشوف الأرصدة قراءة فقط.</li><li><b>الشحن:</b> يشوف الأوردرات الجاهزة، يستلمها، يسلّمها ويحصّل، أو يسجّلها مرتجع.</li></ul></div>`);
   }
 
@@ -369,6 +384,14 @@
     order_action: async function (f, d) {
       var payload = {}; d.forEach(function (v, k) { payload[k] = v; });
       var msg = await rpc("order_action", { p_id: +f.dataset.oid, p_action: f.dataset.name, p: payload }); flash(msg); route();
+    },
+    create_user: async function (f, d) {
+      await callFn({ action: "create", name: d.get("name"), email: d.get("email"), password: d.get("password"), role: d.get("role") });
+      flash("تم إنشاء الحساب."); route();
+    },
+    reset_pw: async function (f, d) {
+      await callFn({ action: "reset_password", id: f.dataset.uid, password: d.get("password") });
+      flash("تم تغيير الباسورد."); route();
     },
     set_user: async function (f, d) {
       await rpc("set_user", { p_id: f.dataset.uid, p_name: d.get("name"), p_role: d.get("role"), p_active: d.get("active") === "on" }); flash("تم حفظ الحساب."); route();

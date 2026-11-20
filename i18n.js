@@ -12,6 +12,14 @@
 
   var D = {
     // ---- long sentences ----
+    "الموظف يقدر يدخل بالإيميل والباسورد ده فوراً. الدور هو اللي بيحدد هيشوف إيه وهيعمل إيه (الصلاحيات تحت": "The employee can sign in right away with this email and password. The role decides what they can see and do (permissions below",
+    "باسورد جديد (8 على الأقل": "New password (at least 8 characters",
+    "الباسورد (8 على الأقل": "Password (at least 8 characters",
+    "تغيير باسورد الموظف": "Reset employee password",
+    "إنشاء حساب جديد": "Create new account",
+    "تم إنشاء الحساب": "Account created",
+    "اسم الموظف": "Employee name",
+    "اعمل الحساب": "Create account",
     "الأدمن لازم يحدد دورك (سيلز / مخزن / شحن...) قبل ما تقدر تستخدم السيستم. اتواصل معاه وبعدين حدّث الصفحة": "The admin must assign your role (Sales / Warehouse / Shipping...) before you can use the system. Contact them, then refresh the page",
     "العربون والدفع الكامل بتأكدهم العمليات قبل خروج الأوردر. الأوردر بيروح للمخزن فوراً بعد الإرسال": "Operations confirms deposits and full payments before the order ships. The order goes to the warehouse immediately after you send it",
     "بيتبلّغ فوراً بأي أوردر جديد، يحضّره ويجهّزه (من غير أسعار)، ويشوف الأرصدة قراءة فقط": "Is notified instantly of every new order, prepares it (no prices shown), and sees stock levels read-only",
