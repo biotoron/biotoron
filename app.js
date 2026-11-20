@@ -8,7 +8,7 @@
   var PAY = { cod: "دفع عند الاستلام", deposit: "عربون + الباقي عند الاستلام", full: "دفع كامل مقدماً" };
   var CATS = { GLASS: "زجاجيات", PRO: "أجهزة ومستلزمات" };
   var MOVE = { opening: "رصيد افتتاحي", receive: "إضافة", adjust: "تعديل/جرد", order_out: "خرج لأوردر", return_in: "مرتجع" };
-  var LOGI = { created: "📝 إنشاء", preparing: "🔧 تحضير", ready: "📦 جاهز", shipped: "🚚 خروج", delivered: "✅ تسليم", returned: "↩️ مرتجع", cancelled: "❌ إلغاء", payment: "💰 دفع", edit: "✏️ تعديل", restock: "📥 مخزن", note: "💬 ملاحظة" };
+  var LOGI = { created: "📝 إنشاء", preparing: "🔧 تحضير", ready: "📦 جاهز", shipped: "🚚 تم الشحن", delivered: "✅ تسليم", returned: "↩️ مرتجع", cancelled: "❌ إلغاء", payment: "💰 دفع", edit: "✏️ تعديل", restock: "📥 مخزن", note: "💬 ملاحظة" };
 
   var sb, me = null, lastNotif = 0, products = [], view = { name: "" };
 
@@ -54,7 +54,7 @@
       (can(["sales", "admin"]) ? '<a href="#/orders/new" class="nav-cta">+ أوردر جديد</a>' : "") +
       (me.role === "admin" ? '<a href="#/movements" class="' + on("#/movements") + '">حركة المخزن</a><a href="#/users" class="' + on("#/users") + '">الحسابات</a>' : "") +
       '</nav><a class="bell" href="#/notifications" title="الإشعارات">🔔<span class="badge" id="badge" ' + (me.unread ? "" : "hidden") + ">" + (me.unread || 0) + "</span></a>" +
-      '<div class="who"><span>' + esc(me.name) + " · " + ROLES[me.role] + '</span> <a href="#/password" style="color:#d9f3ef">الباسورد</a> <button class="linkbtn" data-click="logout">خروج</button></div></div></header>';
+      '<div class="who"><span>' + esc(me.name) + " · " + ROLES[me.role] + '</span> <a href="#/password" style="color:#d9f3ef">الباسورد</a> <button class="linkbtn" data-click="lang">' + BT_I18N.toggleLabel + '</button> <button class="linkbtn" data-click="logout">خروج</button></div></div></header>';
   }
   function setBadge(n) {
     me.unread = n; var b = $("#badge"); if (!b) return; b.textContent = n > 99 ? "99+" : n; b.hidden = !n;
@@ -68,13 +68,14 @@
       <form class="card" data-act="login">${err ? h`<div class="flash err">${err}</div>` : ""}
       <label>الإيميل</label><input type="email" name="email" required autofocus autocomplete="username" dir="ltr">
       <label>الباسورد</label><input type="password" name="password" required autocomplete="current-password" dir="ltr">
-      <p><button class="btn lg" style="width:100%">دخول</button></p></form></div>`);
+      <p><button class="btn lg" style="width:100%">دخول</button></p></form>
+      <p style="text-align:center"><button type="button" class="linkbtn" style="color:var(--brand)" data-click="lang">${BT_I18N.toggleLabel}</button></p></div>`);
   }
   function pendingView() {
     topbar();
     setMain(h`<div class="card" style="max-width:480px;margin:10vh auto;text-align:center"><h2>حسابك لسه مستني التفعيل</h2>
       <p class="muted">الأدمن لازم يحدد دورك (سيلز / مخزن / شحن...) قبل ما تقدر تستخدم السيستم. اتواصل معاه وبعدين حدّث الصفحة.</p>
-      <p><button class="btn" data-click="reload">تحديث</button> <button class="btn sec" data-click="logout">خروج</button></p></div>`);
+      <p><button class="btn" data-click="reload">تحديث</button> <button class="btn sec" data-click="logout">خروج</button> <button class="btn sec" data-click="lang">${BT_I18N.toggleLabel}</button></p></div>`);
     $("#topbar").innerHTML = "";
   }
 
@@ -272,7 +273,7 @@
       ${o.payment_type !== "cod" && !o.payment_confirmed && ["new", "preparing", "ready"].indexOf(o.status) > -1 && me.role !== "warehouse" ? h`<div class="warnbox">💰 الدفع (${PAY[o.payment_type]}) لسه متأكدش من العمليات — الأوردر مش هيخرج للتوصيل قبل التأكيد.</div>` : ""}
       ${o.status === "returned" && !o.restocked ? h`<div class="warnbox">↩️ الأوردر مرتجع — الكميات لسه ماتضافتش للمخزن (الأدمن بيرجّعها).</div>` : ""}
       <div class="grid g2"><div class="card"><h2>العميل والتوصيل</h2><dl class="kv"><dt>الاسم</dt><dd>${o.customer_name}</dd>
-        ${ct ? h`<dt>التليفون</dt><dd dir="ltr" style="text-align:right"><a href="tel:${o.phone}">${o.phone}</a>${o.phone2 ? h` · <a href="tel:${o.phone2}">${o.phone2}</a>` : ""}</dd><dt>المحافظة</dt><dd>${o.governorate || "—"}</dd><dt>العنوان</dt><dd>${o.address}</dd>` : ""}
+        ${ct ? h`<dt>التليفون</dt><dd dir="ltr" style="text-align:${BT_I18N.lang === 'ar' ? 'right' : 'left'}"><a href="tel:${o.phone}">${o.phone}</a>${o.phone2 ? h` · <a href="tel:${o.phone2}">${o.phone2}</a>` : ""}</dd><dt>المحافظة</dt><dd>${o.governorate || "—"}</dd><dt>العنوان</dt><dd>${o.address}</dd>` : ""}
         <dt>ملاحظات</dt><dd>${o.notes || "—"}</dd></dl></div>
       ${pr || me.role === "shipping" ? h`<div class="card"><h2>الدفع</h2><dl class="kv"><dt>الطريقة</dt><dd>${PAY[o.payment_type]}</dd>
         ${pr ? h`<dt>إجمالي الأصناف</dt><dd>${money(o.subtotal)} ج.م</dd><dt>الشحن</dt><dd>${money(o.shipping_fee)} ج.م</dd><dt>الإجمالي</dt><dd><b>${money(o.total)} ج.م</b></dd>` : ""}
@@ -307,7 +308,7 @@
     setMain(h`${raw(flashHtml())}<h1>الحسابات</h1>
       <div class="card"><h2>إزاي تضيف موظف جديد؟</h2><ol class="small"><li>من لوحة Supabase: <b>Authentication ← Users ← Add user</b>، اكتب إيميله وباسورد مؤقت، وعلّم على <b>Auto Confirm User</b>.</li><li>ارجع هنا وحدّث الصفحة، هيظهر في الجدول بدور "بدون دور" — اضغط "تعديل" وحدد دوره.</li><li>اديله الإيميل والباسورد، وهو يغيّر الباسورد من "الباسورد" فوق.</li></ol></div>
       <div class="tw"><table><tr><th>الاسم</th><th>الإيميل</th><th>الدور</th><th>الحالة</th><th></th></tr>
-      ${rows.map(function (u) { return h`<tr ${u.active ? "" : raw('style="opacity:.55"')}><td><b>${u.name}</b></td><td dir="ltr" style="text-align:right">${u.email}</td><td><span class="pill ${u.role === "none" ? "s-preparing" : "s-new"}">${ROLES[u.role]}</span></td><td>${u.active ? "شغال" : h`<span class="pill s-cancelled">موقوف</span>`}</td>
+      ${rows.map(function (u) { return h`<tr ${u.active ? "" : raw('style="opacity:.55"')}><td><b>${u.name}</b></td><td dir="ltr" style="text-align:${BT_I18N.lang === 'ar' ? 'right' : 'left'}">${u.email}</td><td><span class="pill ${u.role === "none" ? "s-preparing" : "s-new"}">${ROLES[u.role]}</span></td><td>${u.active ? "شغال" : h`<span class="pill s-cancelled">موقوف</span>`}</td>
         <td><details><summary style="cursor:pointer;color:var(--brand)">تعديل</summary><form data-act="set_user" data-uid="${u.id}" style="min-width:260px"><label>الاسم</label><input name="name" value="${u.name}" required>
         <label>الدور</label><select name="role">${Object.keys(ROLES).map(function (r) { return h`<option value="${r}" ${u.role === r ? "selected" : ""}>${ROLES[r]}</option>`; })}</select>
         <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="active" style="width:auto" ${u.active ? "checked" : ""}> الحساب شغال</label><p><button class="btn sm">حفظ</button></p></form></details></td></tr>`; })}</table></div>
@@ -393,12 +394,13 @@
     var b = e.target.closest("[data-click]"); if (!b) return; var a = b.dataset.click;
     if (a === "logout") { await sb.auth.signOut(); me = null; loginView(); }
     else if (a === "reload") boot();
+    else if (a === "lang") BT_I18N.set(BT_I18N.lang === "en" ? "ar" : "en");
     else if (a === "export_stock") exportStock();
   });
   function exportStock() {
     var rows = view.rows || []; var lines = ["القسم,الصنف,البراند,الموديل,بالمخزن,محجوز,المتاح"];
     rows.forEach(function (p) { lines.push([CATS[p.catalog], p.name, p.brand, p.model, p.qty, p.reserved, p.qty - p.reserved].map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(",")); });
-    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" })); a.download = "stock.csv"; a.click();
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + BT_I18N.tr(lines.join("\n"))], { type: "text/csv;charset=utf-8" })); a.download = "stock.csv"; a.click();
   }
 
   // ---------- الإشعارات اللحظية ----------
